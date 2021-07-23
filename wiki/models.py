@@ -46,7 +46,7 @@ class BaseModel(models.Model):
 
     def get_full_url(self):
 
-        site = get_current_site.domain()
+        site = get_current_site().domain
         url = "https://{site}{path}".format(site=site, path=self.get_absolute_url())
         return url
 
@@ -342,7 +342,7 @@ class WikiSettings(models.Model):
         "静态文件保存地址",
         max_length=300,
         null=False,
-        default='/var/www/resource/')
+        default=settings.MEDIA_ROOT)
 
     class Meta:
         verbose_name = '网站配置'

@@ -34,7 +34,7 @@ DEBUG = True
 
 TESTING = len(sys.argv) > 1 and sys.argv[1] == 'test'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["example.com", "*"]
 
 # Application definition
 
@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites',
     'django.contrib.sitemaps',
+    'haystack',
+
     'wiki',
     'accounts',
     'comments',
@@ -55,7 +57,6 @@ INSTALLED_APPS = [
     'servermanager',
     'owntracks',
     'mdeditor',
-    'haystack',
     'compressor'
 ]
 
@@ -160,6 +161,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'accounts.WikiUser'  # 指定用户模型， 系统默认的是auth.User
 
+"""
+haystack是django的开源搜索框架，该框架支持Solr,Elasticsearch,Whoosh, *Xapian*搜索引擎，不用更改代码，直接切换引擎，减少代码量。
+搜索引擎使用Whoosh，这是一个由纯Python实现的全文搜索引擎，没有二进制文件等，比较小巧，配置比较简单，当然性能自然略低。
+中文分词Jieba，由于Whoosh自带的是英文分词，对中文的分词支持不是太好，故用jieba替换whoosh的分词组件。
+其他：Python 2.7 or 3.4.4, Django 1.8.3或者以上，Debian 4.2.6_3
+
+"""
 HAYSTACK_CONNECTIONS = {
     'default': {
         'ENGINE': 'DjangoWiki.whoosh_cn_backend.WhooshEngine',
@@ -170,7 +178,7 @@ HAYSTACK_CONNECTIONS = {
 HAYSTACK_SIGNAL_PROCESSOR = 'haystack.signals.RealtimeSignalProcessor'
 # 当用户名与邮箱都可以登录的时候自定义验证方法，需要在setting里指定新的验证类
 AUTHENTICATION_BACKENDS = [
-    'account.user_login_backend.EmailOrUsernameModelBackend'
+    'accounts.user_login_backend.EmailOrUsernameModelBackend'
 ]
 
 import time
@@ -185,101 +193,102 @@ if not os.path.exists(log_path): os.mkdir(log_path)  # 如果不存在这个logs
 必须要非常小心，因为可能产生一些令人意外的结果（官网这么说的，还没试过），
 所以比较建议的方法是'disable_existing_loggers': False,然后重写部分或者全部的默认logger
 '''
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': True,
-    'formatters': {
-        # 日志格式
-        'standard': {
-            'format': '[%(asctime)s] [%(filename)s:%(lineno)d] [%(module)s:%(funcName)s] '
-                      '[%(levelname)s]- %(message)s'},
-        'simple': {  # 简单格式
-            'format': '%(levelname)s %(message)s'
-        },
-    },
-    # 过滤
-    'filters': {
-        'require_debug_false': {
-            '()': 'django.utils.log.RequireDebugFalse',
-        },
-        'require_debug_true': {
-            '()': 'django.utils.log.RequireDebugTrue',
-        },
-    },
-    # 定义具体处理日志的方式
-    'handlers': {
-        # 默认记录所有日志
-        'default': {
-            'level': 'INFO',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join(log_path, 'all-{}.log'.format(time.strftime('%Y-%m-%d'))),
-            'maxBytes': 1024 * 1024 * 5,  # 文件大小
-            'backupCount': 5,  # 备份数
-            'formatter': 'standard',  # 输出格式
-            'encoding': 'utf-8',  # 设置默认编码，否则打印出来汉字乱码
-        },
-        # 输出错误日志
-        'error': {
-            'level': 'ERROR',
-            'class': 'logging.handlers.RotatingFileHandler',  # 保存到文件
-            'filename': os.path.join(log_path, 'error-{}.log'.format(time.strftime('%Y-%m-%d'))),
-            'maxBytes': 1024 * 1024 * 5,  # 文件大小
-            'backupCount': 5,  # 备份数
-            'formatter': 'standard',  # 输出格式
-            'encoding': 'utf-8',  # 设置默认编码
-        },
-        # 控制台输出
-        'console': {
-            'level': 'DEBUG',
-            'class': 'logging.StreamHandler',  # 打印到屏幕
-            'formatter': 'standard'
-        },
-        # 输出info日志
-        'info': {
-            'level': 'INFO',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': os.path.join(log_path, 'info-{}.log'.format(time.strftime('%Y-%m-%d'))),
-            'maxBytes': 1024 * 1024 * 5,
-            'backupCount': 5,
-            'formatter': 'standard',
-            'encoding': 'utf-8',  # 设置默认编码
-        },
-        'mail_admins': {
-            'level': 'ERROR',
-            'filters': ['require_debug_false'],  # 仅当 DEBUG = False 时才发送邮件
-            'class': 'django.utils.log.AdminEmailHandler'
-        },
-        'null': {
-            'level': 'DEBUG',
-            'class': 'logging.NullHandler',
-        },
-    },
-    # 配置用哪几种 handlers 来处理日志
-    'loggers': {
-        # 类型 为 django 处理所有类型的日志， 默认调用
-        'django': {
-            'handlers': ['default', 'console'],
-            'level': 'INFO',
-            'propagate': False
-        },
-        # log 调用时需要当作参数传入
-        'log': {
-            'handlers': ['error', 'info', 'console', 'default'],
-            'level': 'INFO',
-            'propagate': True  # 向上（更高level的logger）传递
-        },
-        'django.request': {
-            'handlers': ['mail_admins'],
-            'level': 'ERROR',
-            'propagate': False,  # 不向上（更高level的logger）传递
-        },
-        # 对于不在 ALLOWED_HOSTS 中的请求不发送报错邮件
-        'django.security.DisallowedHost': {
-            'handlers': ['null'],
-            'propagate': False,
-        },
-    }
-}
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': True,
+#     'formatters': {
+#         # 日志格式
+#         'standard': {
+#             'format': '[%(asctime)s] [%(filename)s:%(lineno)d] [%(module)s:%(funcName)s] '
+#                       '[%(levelname)s]- %(message)s'},
+#         'simple': {  # 简单格式
+#             'format': '%(levelname)s %(message)s'
+#         },
+#     },
+#     # 过滤
+#     'filters': {
+#         'require_debug_false': {
+#             '()': 'django.utils.log.RequireDebugFalse',
+#         },
+#         'require_debug_true': {
+#             '()': 'django.utils.log.RequireDebugTrue',
+#         },
+#     },
+#     # 定义具体处理日志的方式
+#     'handlers': {
+#         # 默认记录所有日志
+#         'default': {
+#             'level': 'INFO',
+#             'class': 'logging.handlers.RotatingFileHandler',
+#             # 'class': 'logging.handlers.RotatingFileHandler',
+#             'filename': os.path.join(log_path, 'all-{}.log'.format(time.strftime('%Y-%m-%d'))),
+#             'maxBytes': 1024 * 1024 * 5,  # 文件大小
+#             'backupCount': 5,  # 备份数
+#             'formatter': 'standard',  # 输出格式
+#             'encoding': 'utf-8',  # 设置默认编码，否则打印出来汉字乱码
+#         },
+#         # 输出错误日志
+#         'error': {
+#             'level': 'ERROR',
+#             'class': 'logging.handlers.RotatingFileHandler',  # 保存到文件
+#             'filename': os.path.join(log_path, 'error-{}.log'.format(time.strftime('%Y-%m-%d'))),
+#             'maxBytes': 1024 * 1024 * 5,  # 文件大小
+#             'backupCount': 5,  # 备份数
+#             'formatter': 'standard',  # 输出格式
+#             'encoding': 'utf-8',  # 设置默认编码
+#         },
+#         # 控制台输出
+#         'console': {
+#             'level': 'DEBUG',
+#             'class': 'logging.StreamHandler',  # 打印到屏幕
+#             'formatter': 'standard'
+#         },
+#         # 输出info日志
+#         'info': {
+#             'level': 'INFO',
+#             'class': 'logging.handlers.RotatingFileHandler',
+#             'filename': os.path.join(log_path, 'info-{}.log'.format(time.strftime('%Y-%m-%d'))),
+#             'maxBytes': 1024 * 1024 * 5,
+#             'backupCount': 5,
+#             'formatter': 'standard',
+#             'encoding': 'utf-8',  # 设置默认编码
+#         },
+#         'mail_admins': {
+#             'level': 'ERROR',
+#             'filters': ['require_debug_false'],  # 仅当 DEBUG = False 时才发送邮件
+#             'class': 'django.utils.log.AdminEmailHandler'
+#         },
+#         'null': {
+#             'level': 'DEBUG',
+#             'class': 'logging.NullHandler',
+#         },
+#     },
+#     # 配置用哪几种 handlers 来处理日志
+#     'loggers': {
+#         # 类型 为 django 处理所有类型的日志， 默认调用
+#         'django': {
+#             'handlers': ['default', 'console'],
+#             'level': 'INFO',
+#             'propagate': False
+#         },
+#         # log 调用时需要当作参数传入
+#         'log': {
+#             'handlers': ['error', 'info', 'console', 'default'],
+#             'level': 'INFO',
+#             'propagate': True  # 向上（更高level的logger）传递
+#         },
+#         'django.request': {
+#             'handlers': ['mail_admins'],
+#             'level': 'ERROR',
+#             'propagate': False,  # 不向上（更高level的logger）传递
+#         },
+#         # 对于不在 ALLOWED_HOSTS 中的请求不发送报错邮件
+#         'django.security.DisallowedHost': {
+#             'handlers': ['null'],
+#             'propagate': False,
+#         },
+#     }
+# }
 # 默认存储文件路径
 MEDIA_ROOT = os.path.join(BASE_DIR, 'uploads')
 MEDIA_URL = '/media/'
@@ -312,8 +321,7 @@ BOOTSTRAP_COLOR_TYPES = [
 ]
 
 SITE_ID = 1
-BAIDU_NOTIFY_URL = os.environ.get('DJANGO_BAIDU_NOTIFY_URL') \
-                   or 'http://data.zz.baidu.com/urls?site=https://www.lylinux.net&token=1uAOGrMsUm5syDGn'
+BAIDU_NOTIFY_URL = os.environ.get('DJANGO_BAIDU_NOTIFY_URL')
 
 # 管理员邮箱
 ADMINS = (
@@ -327,13 +335,13 @@ ADMINS = (
 # Email设置
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_USE_TLS = env_to_bool('DJANGO_EMAIL_TLS', False)
-EMAIL_USE_SSL = env_to_bool('DJANGO_EMAIL_SSL', True)
-EMAIL_HOST = 'smtp.163.com'  # QQ邮箱SMTP服务器(邮箱需要开通SMTP服务)
+# EMAIL_USE_SSL = env_to_bool('DJANGO_EMAIL_SSL', True)
+EMAIL_HOST = 'smtp.qq.com'  # QQ邮箱SMTP服务器(邮箱需要开通SMTP服务)
 EMAIL_PORT = 25  # QQ邮箱SMTP服务端口
-EMAIL_HOST_USER = '**********@163.com'  # 我的邮箱帐号
-EMAIL_HOST_PASSWORD = '**************'  # 授权码
-EMAIL_SUBJECT_PREFIX = 'website'  # 为邮件标题的前缀,默认是'[django]'
-EMAIL_USE_TLS = True  # 开启安全链接
+EMAIL_HOST_USER = '2359301733@qq.com'  # 我的邮箱帐号
+EMAIL_HOST_PASSWORD = 'gcywwokwdstddjaf'  # 授权码
+EMAIL_SUBJECT_PREFIX = 'website'  # 为邮件标题的前缀'
+# 有这个就会显示是你的邮箱
 DEFAULT_FROM_EMAIL = SERVER_EMAIL = EMAIL_HOST_USER  # 设置发件人
 
 # 1.

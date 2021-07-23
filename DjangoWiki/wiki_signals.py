@@ -35,6 +35,12 @@ def send_email_signal_handler(sender, **kwargs):
         content,
         from_email=settings.DEFAULT_FROM_EMAIL,
         to=emailto)
+    """
+    默认情况下，EmailMessage正文的MIME类型为“text/plain”。
+    text/plain在任何邮件客户端都可以实现，这样可以保证任何收件人都能够阅读电子邮件。
+     但是，如果确信收件人可以处理替代内容类型，则可以使用EmailMessage类的content_subtype属性更改主要内容类型。 
+     主类型将始终为“text”，但可以更改子类型
+    """
     msg.content_subtype = "html"
 
     from servermanager.models import EmailSendLog

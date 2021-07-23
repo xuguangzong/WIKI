@@ -76,8 +76,6 @@ class CommentsTest(TestCase):
         import os
         ```
 
-        [url](https://www.lylinux.net/)
-
         [ddd](http://www.baidu.com)
 
 

@@ -190,9 +190,9 @@ def get_wiki_setting():
             setting = WikiSettings()
             setting.sitename = 'wiki'
             setting.site_description = 'WIKI'
-            setting.site_seo_description = 'WIKI'
             setting.site_keywords = 'Django,Python'
-            setting.article_sub_length = 300
+            setting.articseo_description = 'WIKI'
+            setting.site_le_sub_length = 300
             setting.sidebar_article_count = 10
             setting.sidebar_comment_count = 5
             setting.show_google_adsense = False
@@ -239,7 +239,7 @@ def save_user_avatar(url):
             logger.info('保存用户头像:' + basepath + savefilename)
             with open(basepath + savefilename, 'wb+') as file:
                 file.write(rsp.content)
-            return 'https://resource.lylinux.net/avatar/' + savefilename
+            return '服务器地址' + savefilename
     except Exception as e:
         logger.error(e)
         return url

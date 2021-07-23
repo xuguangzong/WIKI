@@ -272,38 +272,20 @@ def fileupload(request):
     :return:
     """
     if request.method == 'POST':
-        sign = request.GET.get('sign', None)
-        if not sign:
-            return HttpResponseForbidden()
-        if not sign == get_md5(get_md5(settings.SECRET_KEY)):
-            return HttpResponseForbidden()
+        # sign = request.GET.get('sign', None)
+        # if not sign:
+        #     return HttpResponseForbidden()
+        # if not sign == get_md5(get_md5(settings.SECRET_KEY)):
+        #     return HttpResponseForbidden()
         response = []
-        for filename in request.FILES:
-            timestr = datetime.datetime.now().strftime('%Y/%m/%d')
-            imgextensions = ['jpg', 'png', 'jpeg', 'bmp']
-            fname = u''.join(str(filename))
-            isimage = len([i for i in imgextensions if fname.find(i) >= 0]) > 0
-            wikisetting = get_wiki_setting()
+        basepath = settings.MEDIA_ROOT
+        if not os.path.exists(basepath):
+            os.makedirs(basepath)
+        savepath = os.path.join(basepath, request.FILES["file"].name)
+        with open(savepath, 'wb+') as wfile:
+            for chunk in request.FILES["file"].chunks():
+                wfile.write(chunk)
 
-            basepath = r'{basedir}/{type}/{timestr}'.format(
-                basedir=wikisetting.resource_path,
-                type='files' if not isimage else 'image',
-                timestr=timestr)
-            if settings.TESTING:
-                basepath = settings.BASE_DIR + '/uploads'
-            url = 'https://resource.lylinux.net/{type}/{timestr}/{filename}'.format(
-                type='files' if not isimage else 'image', timestr=timestr, filename=filename)
-            if not os.path.exists(basepath):
-                os.makedirs(basepath)
-            savepath = os.path.join(basepath, filename)
-            with open(savepath, 'wb+') as wfile:
-                for chunk in request.FILES[filename].chunks():
-                    wfile.write(chunk)
-            if isimage:
-                from PIL import Image
-                image = Image.open(savepath)
-                image.save(savepath, quality=20, optimize=True)
-            response.append(url)
         return HttpResponse(response)
 
     else:

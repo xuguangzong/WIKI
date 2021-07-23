@@ -47,8 +47,8 @@ class RegisterView(FormView):
             user.save(True)
             site = get_current_site().domain
             sign = get_md5(get_md5(settings.SECRET_KEY + str(user.id)))
-            if settings.DEBUG: # 开发环境下
-                site = '127.0.0.1:8080'
+            if settings.DEBUG:  # 开发环境下
+                site = '127.0.0.1:8000'
             path = reverse('account:result')
             url = "http://{site}{path}?type=validation&id={id}&sign={sign}".format(
                 site=site, path=path, id=user.id, sign=sign)
@@ -64,8 +64,8 @@ class RegisterView(FormView):
                         """.format(url=url)
             send_email(
                 emailto=[user.email],
-                title = '验证您的电子邮箱',
-                content = content
+                title='验证您的电子邮箱',
+                content=content
             )
 
             url = reverse('account:result') + '?type=register&id=' + str(user.id)
@@ -77,6 +77,7 @@ class RegisterView(FormView):
 
 class LogoutView(RedirectView):
     url = '/login/'
+
     #  不是每个装饰器都能直接运用在类方法上，需要使用method_decorator这个装饰器的装饰器方法将装饰器运用在类方法上
 
     @method_decorator(never_cache)
@@ -102,6 +103,7 @@ class LoginView(FormView):
         return super(LoginView, self).dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
+
         redirect_to = self.request.GET.get(self.redirect_field_name)
 
         if not redirect_to:
@@ -124,11 +126,11 @@ class LoginView(FormView):
 
     def get_success_url(self):
 
-        redirect_to = self.request.GET.get(self.redirect_field_name)
+        redirect_to = self.request.POST.get(self.redirect_field_name)
         # 如果url是安全重定向(即不会指向其他主机并使用安全方案)，则返回True。空 url 总是返回 False
         # 如果在 ALLOWED_HOSTS中 提供了指向另一个主机的URL，则该URL被认为是安全的
         # 如果参数 require_https 为True，则使用 http 方案的URL被视为不安全
-        if not is_safe_url(url=redirect_to, allowed_hosts=[self.request.get_hosts()]):
+        if not is_safe_url(url=redirect_to, allowed_hosts=[self.request.get_host()]):
             redirect_to = self.success_url
         return redirect_to
 
@@ -169,4 +171,3 @@ def account_result(request):
             '''
             title = '验证成功'
         return render(request, 'account/result.html', {'title': title, 'content': content})
-

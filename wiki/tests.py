@@ -23,9 +23,9 @@ class ArticleTest(TestCase):
     def test_validate_article(self):
         site = get_current_site().domain
         user = WikiUser.objects.get_or_create(
-            email="liangliangyy@gmail.com",
-            username="liangliangyy")[0]
-        user.set_password("liangliangyy")
+            email="2359301733@qq.com",
+            username="xuguangzong")[0]
+        user.set_password("xuguangzong")
         user.is_staff = True
         user.is_superuser = True
         user.save()
@@ -93,7 +93,7 @@ class ArticleTest(TestCase):
         rsp = self.client.get('/refresh')
         self.assertEqual(rsp.status_code, 302)
 
-        self.client.login(username='liangliangyy', password='liangliangyy')
+        self.client.login(username='xuguangzong', password='xuguangzong')
         rsp = self.client.get('/refresh')
         self.assertEqual(rsp.status_code, 200)
 
@@ -108,26 +108,26 @@ class ArticleTest(TestCase):
 
         p = Paginator(
             Article.objects.filter(
-                author__username='liangliangyy'), 2)
-        self.__check_pagination__(p, '作者文章归档', 'liangliangyy')
+                author__username='xuguangzong'), 2)
+        self.__check_pagination__(p, '作者文章归档', 'xuguangzong')
 
         p = Paginator(Article.objects.filter(category=category), 2)
         self.__check_pagination__(p, '分类目录归档', category.slug)
 
         f = WikiSearchForm()
         f.search()
-        self.client.login(username='liangliangyy', password='liangliangyy')
+        self.client.login(username='xuguangzong', password='xuguangzong')
         from DjangoWiki.spider_notify import SpiderNotify
         SpiderNotify.baidu_notify([article.get_full_url()])
 
         from wiki.templatetags.wiki_tags import gravatar_url, gravatar
-        u = gravatar_url('liangliangyy@gmail.com')
-        u = gravatar('liangliangyy@gmail.com')
+        u = gravatar_url('2359301733@qq.com')
+        u = gravatar('2359301733@qq.com')
 
         link = Links(
             sequence=1,
-            name="lylinux",
-            link='https://wwww.lylinux.net')
+            name="baidu",
+            link='https://wwww.baidu.com')
         link.save()
         response = self.client.get('/links.html')
         self.assertEqual(response.status_code, 200)
@@ -149,11 +149,11 @@ class ArticleTest(TestCase):
 
     def test_validate_feed(self):
         user = WikiUser.objects.get_or_create(
-            email="liangliangyy12@gmail.com",
-            username="liangliangyy")[0]
-        user.set_password("liangliangyy")
+            email="2359301733@qq.com",
+            username="xuguangzong")[0]
+        user.set_password("xuguangzong")
         user.save()
-        self.client.login(username='liangliangyy', password='liangliangyy')
+        self.client.login(username='xuguangzong', password='xuguangzong')
 
         rsp = self.client.get('/refresh')
         self.assertEqual(rsp.status_code, 403)

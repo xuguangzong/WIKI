@@ -23,6 +23,6 @@ class EmailOrUsernameModelBackend(ModelBackend):
     def get_user(self, username):
 
         try:
-            return get_user_model().objects.get(ok=username)
+            return get_user_model().objects.get(pk=username)
         except get_user_model().DoesNotExist:
             return None
